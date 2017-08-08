@@ -1,10 +1,14 @@
 const launchChrome = require('@serverless-chrome/lambda');
 const Chromeless = require('chromeless').Chromeless;
+const fs = require('fs');
 var chromeInstance = null;
 
 function reloadChrome() {
 	if (chromeInstance) {
-		console.log('Killing', chromeInstance);
+		var logs = fs.readFileSync(chromeInstance.log).toString();
+		var errorLogs = fs.readFileSync(chromeInstance.errorLog).toString();
+
+		console.log(`Killing chrome: ${JSON.stringify(chromeInstance)}\nLogs: ${logs}\nError Logs: ${errorLogs}`);
 		chromeInstance.kill();
 	}
 	return Promise.resolve().then(() => {
@@ -37,8 +41,6 @@ function getUrlFn(url) {
 		const chromeless = new Chromeless({
 			launchChrome: false
 		});
-		console.log('Chrome debuggable on port: ' + chrome.port);
-
 		return chromeless
 			.goto(url)
 			.evaluate(function() {
