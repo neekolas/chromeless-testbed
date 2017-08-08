@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Test cases for chromeless lambda
+Resources:
+    Fn:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: ./dist
+            Description: New Chrome Every Invoke
+            Handler: "src/new-chrome-every-invoke.handler"
+            Runtime: "nodejs6.10"
+            Timeout: 30
+            MemorySize: 1536
+            Environment:
+                Variables:
+                    CASE_NAME: new-chrome-every-invoke
+            Events:
+              GetResource:
+                Type: Api
+                Properties:
+                  Path: /resource/{resourceId}
+                  Method: get
