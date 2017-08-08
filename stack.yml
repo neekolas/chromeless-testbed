@@ -7,7 +7,7 @@ Resources:
         Properties:
             CodeUri: ./dist
             Description: New Chrome Every Invoke
-            Handler: "src/new-chrome-every-invoke.handler"
+            Handler: "src/index.handler"
             Runtime: "nodejs6.10"
             Timeout: 30
             MemorySize: 1536
