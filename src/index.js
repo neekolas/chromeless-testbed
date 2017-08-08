@@ -38,8 +38,8 @@ module.exports.handler = (ev, ctx, cb) => {
 				.end()
 				.then(result => {
 					console.log(result);
-					cb(null, { url: url, result: result });
+					ctx.succeed({ url: url, result: result });
 				});
 		})
-		.catch(cb);
+		.catch(ctx.fail);
 };
