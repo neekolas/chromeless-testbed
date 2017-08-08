@@ -8,7 +8,7 @@ Simple test environment and build scripts for Chromeless running directly on AWS
 - Local runner script to crawl a URL
 - CloudFormation stack to deploy to AWS
 
-## Usage
+### Usage
 ```
 git clone git@github.com:neekolas/chromeless-testbed.git
 cd chromeless-testbed
@@ -16,7 +16,7 @@ cd chromeless-testbed
 ./run.sh http://www.nytimes.com
 ```
 
-## Deployment
+### Deployment
 _Assumes you have AWS Cli configured_
 ```
 ./build.sh
