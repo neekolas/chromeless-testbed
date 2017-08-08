@@ -3,22 +3,26 @@ const Chromeless = require('chromeless').Chromeless;
 var chromeInstance = null;
 
 function reloadChrome() {
-	var prom = Promise.resolve();
 	if (chromeInstance) {
-		prom = chromeInstance.kill();
+		console.log('Killing', chromeInstance);
+		chromeInstance.kill();
 	}
-	return prom.then(() => {
-		launchChrome({
+	return Promise.resolve().then(() => {
+		return launchChrome({
 			flags: ['--window-size=1200,800', '--disable-gpu', '--headless']
 		}).then(function(chrome) {
 			chromeInstance = chrome;
+			return chrome;
 		});
 	});
 }
+console.log('Starting up function');
+reloadChrome();
 
 function waitForChrome() {
 	return new Promise((resolve, reject) => {
 		if (chromeInstance) {
+			console.log('Found chrome');
 			return resolve(chromeInstance);
 		}
 		console.log('Waiting');
@@ -28,30 +32,33 @@ function waitForChrome() {
 	});
 }
 
+function getUrlFn(url) {
+	return function(chrome) {
+		const chromeless = new Chromeless({
+			launchChrome: false
+		});
+		console.log('Chrome debuggable on port: ' + chrome.port);
+
+		return chromeless
+			.goto(url)
+			.evaluate(function() {
+				return document.title;
+			})
+			.end();
+	};
+}
+
 module.exports.handler = (ev, ctx, cb) => {
 	const url = ev.url;
 	console.log('Getting url', url);
-	waitForChrome()
-		.then(chrome => {
-			const chromeless = new Chromeless({
-				launchChrome: false
-			});
-			console.log('Chrome debuggable on port: ' + chrome.port);
-
-			return chromeless
-				.goto(url)
-				.catch(e => {
-					console.log(e);
-					return reloadChrome().then(() => chromeless.goto(url));
-				})
-				.evaluate(function() {
-					return document.title;
-				})
-				.end()
-				.then(result => {
-					console.log(result);
-					ctx.succeed({ url: url, result: result });
-				});
+	return waitForChrome()
+		.then(getUrlFn(url))
+		.then(result => {
+			console.log(result);
+			ctx.succeed({ url: url, result: result });
 		})
-		.catch(ctx.fail);
+		.catch(e => {
+			console.log(e);
+			return reloadChrome().then(() => module.exports.handler(ev, ctx, cb));
+		});
 };
