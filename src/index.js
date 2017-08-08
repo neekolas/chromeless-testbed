@@ -2,11 +2,19 @@ const launchChrome = require('@serverless-chrome/lambda');
 const Chromeless = require('chromeless').Chromeless;
 var chromeInstance = null;
 
-launchChrome({
-	flags: ['--window-size=1200,800', '--disable-gpu', '--headless']
-}).then(function(chrome) {
-	chromeInstance = chrome;
-});
+function reloadChrome() {
+	var prom = Promise.resolve();
+	if (chromeInstance) {
+		prom = chromeInstance.kill();
+	}
+	return prom.then(() => {
+		launchChrome({
+			flags: ['--window-size=1200,800', '--disable-gpu', '--headless']
+		}).then(function(chrome) {
+			chromeInstance = chrome;
+		});
+	});
+}
 
 function waitForChrome() {
 	return new Promise((resolve, reject) => {
@@ -25,13 +33,17 @@ module.exports.handler = (ev, ctx, cb) => {
 	console.log('Getting url', url);
 	waitForChrome()
 		.then(chrome => {
-			console.log('Chrome debuggable on port: ' + chrome.port);
 			const chromeless = new Chromeless({
 				launchChrome: false
 			});
+			console.log('Chrome debuggable on port: ' + chrome.port);
 
 			return chromeless
 				.goto(url)
+				.catch(e => {
+					console.log(e);
+					return reloadChrome().then(() => chromeless.goto(url));
+				})
 				.evaluate(function() {
 					return document.title;
 				})
