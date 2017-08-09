@@ -1,44 +1,26 @@
 const launchChrome = require('@serverless-chrome/lambda');
 const Chromeless = require('chromeless').Chromeless;
+const fs = require('fs');
 var chromeInstance = null;
 
 function reloadChrome() {
 	if (chromeInstance) {
-		console.log('Killing', chromeInstance);
+		var logs = fs.readFileSync(chromeInstance.log).toString();
+		var errorLogs = fs.readFileSync(chromeInstance.errorLog).toString();
+
+		console.log(`Killing chrome: ${JSON.stringify(chromeInstance)}\nLogs: ${logs}\nError Logs: ${errorLogs}`);
 		chromeInstance.kill();
 	}
-	return Promise.resolve().then(() => {
-		return launchChrome({
-			flags: ['--window-size=1200,800', '--disable-gpu', '--headless']
-		}).then(function(chrome) {
-			chromeInstance = chrome;
-			return chrome;
-		});
-	});
-}
-console.log('Starting up function');
-reloadChrome();
-
-function waitForChrome() {
-	return new Promise((resolve, reject) => {
-		if (chromeInstance) {
-			console.log('Found chrome');
-			return resolve(chromeInstance);
-		}
-		console.log('Waiting');
-		setTimeout(() => {
-			resolve(Promise.resolve().then(waitForChrome));
-		}, 100);
-	});
+	return Promise.resolve(chromeInstance);
 }
 
 function getUrlFn(url) {
 	return function(chrome) {
+		chromeInstance = chrome;
+
 		const chromeless = new Chromeless({
 			launchChrome: false
 		});
-		console.log('Chrome debuggable on port: ' + chrome.port);
-
 		return chromeless
 			.goto(url)
 			.evaluate(function() {
@@ -50,12 +32,22 @@ function getUrlFn(url) {
 
 module.exports.handler = (ev, ctx, cb) => {
 	const url = ev.url;
+	ctx.callbackWaitsForEmptyEventLoop = false;
 	console.log('Getting url', url);
-	return waitForChrome()
+	return launchChrome({
+		flags: [
+			'--window-size=1200,800',
+			'--disable-gpu',
+			'--headless',
+			'--no-zygote',
+			'--single-process',
+			'--no-sandbox'
+		]
+	})
 		.then(getUrlFn(url))
 		.then(result => {
 			console.log(result);
-			ctx.succeed({ url: url, result: result });
+			cb(null, { url: url, result: result });
 		})
 		.catch(e => {
 			console.log(e);
