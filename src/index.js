@@ -24,51 +24,34 @@ function logChrome() {
 	console.log(`Chrome Logs: ${JSON.stringify(chromeInstance)}\nLogs: ${logs}\nError Logs: ${errorLogs}`);
 }
 
-function getUrlFn(url) {
-	return function getChrome(chrome) {
-		chromeInstance = chrome;
-
-		const chromeless = new Chromeless({
-			launchChrome: false,
-		});
-		return chromeless.goto(url).evaluate(() => document.title).end();
-	};
+function getUrl(url) {
+	const chromeless = new Chromeless({
+		launchChrome: false
+	});
+	return chromeless.goto(url).evaluate(() => document.title).end();
 }
 
-module.exports.handler = (ev, ctx, cb) => {
-	const url = ev.url;
-	ctx.callbackWaitsForEmptyEventLoop = false;
+const handler = (module.exports.handler = url => {
 	console.log('Getting url', url);
-	return launchChrome({
-		flags: [
-			'--window-size=1200,800',
-			'--disable-gpu',
-			'--headless',
-			'--no-zygote',
-			'--single-process',
-			'--no-sandbox',
-		],
-	})
-		.then(getUrlFn(url))
+	return getUrl(url)
 		.then(result => {
 			console.log(result);
-			logChrome();
-			cb(null, result);
+			return result;
 		})
 		.catch(e => {
 			console.log(e);
-			logChrome();
-			cb(e);
+			return reloadChrome();
 		});
-};
-//
-// module.exports.handler = (ev, ctx, cb) => {
-// 	const boundHandler = fakeHandler.bind(this, ev, ctx, cb);
-// 	boundHandler()
-// 		.then(boundHandler)
-// 		.then(boundHandler)
-// 		.then(boundHandler)
-// 		.then(boundHandler)
-// 		.then(boundHandler)
-// 		.then(ctx.succeed, ctx.fail);
-// };
+});
+
+launchChrome({
+	flags: ['--window-size=1200,800', '--disable-gpu', '--headless', '--no-zygote', '--single-process', '--no-sandbox']
+}).then(chrome => {
+	chromeInstance = chrome;
+
+	return Promise.all([
+		handler('http://www.nytimes.com'),
+		handler('http://www.cnn.com'),
+		handler('http://www.apple.com')
+	]).then(console.log.bind(console, 'Done!'));
+});
