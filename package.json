@@ -10,7 +10,9 @@
 	"license": "ISC",
 	"dependencies": {
 		"@serverless-chrome/lambda": "*",
-		"chromeless": "^1.2.0"
+		"chromeless": "^1.2.0",
+		"eslint-plugin-import": "^2.7.0",
+		"eslint-plugin-jsx-a11y": "^6.0.2"
 	},
 	"devDependencies": {
 		"babel-cli": "^6.24.1",
@@ -21,7 +23,11 @@
 		"prettier-eslint": "^6.4.2"
 	},
 	"babel": {
-		"presets": ["env"],
-		"ignore": ["dist/*"]
+		"presets": [
+			"env"
+		],
+		"ignore": [
+			"dist/*"
+		]
 	}
 }

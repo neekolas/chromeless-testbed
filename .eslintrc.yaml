@@ -1,5 +1,10 @@
 extends:
+  - airbnb-base
   - prettier
+plugins:
+  - import
+rules:
+    no-console: 0
 parserOptions:
   ecmaVersion: 2016
   sourceType: module

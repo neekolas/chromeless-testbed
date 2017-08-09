@@ -1,12 +1,13 @@
 const launchChrome = require('@serverless-chrome/lambda');
 const Chromeless = require('chromeless').Chromeless;
 const fs = require('fs');
-var chromeInstance = null;
+
+let chromeInstance = null;
 
 function reloadChrome() {
 	if (chromeInstance) {
-		var logs = fs.readFileSync(chromeInstance.log).toString();
-		var errorLogs = fs.readFileSync(chromeInstance.errorLog).toString();
+		const logs = fs.readFileSync(chromeInstance.log).toString();
+		const errorLogs = fs.readFileSync(chromeInstance.errorLog).toString();
 
 		console.log(`Killing chrome: ${JSON.stringify(chromeInstance)}\nLogs: ${logs}\nError Logs: ${errorLogs}`);
 		chromeInstance.kill();
@@ -15,18 +16,13 @@ function reloadChrome() {
 }
 
 function getUrlFn(url) {
-	return function(chrome) {
+	return function getChrome(chrome) {
 		chromeInstance = chrome;
 
 		const chromeless = new Chromeless({
-			launchChrome: false
+			launchChrome: false,
 		});
-		return chromeless
-			.goto(url)
-			.evaluate(function() {
-				return document.title;
-			})
-			.end();
+		return chromeless.goto(url).evaluate(() => document.title).end();
 	};
 }
 
@@ -41,16 +37,16 @@ module.exports.handler = (ev, ctx, cb) => {
 			'--headless',
 			'--no-zygote',
 			'--single-process',
-			'--no-sandbox'
-		]
+			'--no-sandbox',
+		],
 	})
 		.then(getUrlFn(url))
 		.then(result => {
 			console.log(result);
-			cb(null, { url: url, result: result });
+			cb(null, { url, result });
 		})
 		.catch(e => {
 			console.log(e);
-			return reloadChrome().then(() => module.exports.handler(ev, ctx, cb));
+			return reloadChrome().then(() => module.exports.handler(ev, ctx, cb)).catch(ctx.fail);
 		});
 };
