@@ -9,7 +9,7 @@ Resources:
             Description: New Chrome Every Invoke
             Handler: "src/index.handler"
             Runtime: "nodejs6.10"
-            Timeout: 30
+            Timeout: 60
             MemorySize: 1536
             Environment:
                 Variables:
@@ -20,3 +20,7 @@ Resources:
                 Properties:
                   Path: /resource/{resourceId}
                   Method: get
+
+Outputs:
+    Fn:
+        Value: !Ref Fn

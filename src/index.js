@@ -4,6 +4,7 @@ const fs = require('fs');
 
 let chromeInstance = null;
 
+console.log('Starting lambda');
 function reloadChrome() {
 	if (chromeInstance) {
 		const logs = fs.readFileSync(chromeInstance.log).toString();
@@ -13,6 +14,14 @@ function reloadChrome() {
 		chromeInstance.kill();
 	}
 	return Promise.resolve(chromeInstance);
+}
+
+function logChrome() {
+	const logs = fs.readFileSync(chromeInstance.log).toString();
+	const errorLogs = fs.readFileSync(chromeInstance.errorLog).toString();
+	// fs.writeFileSync(chromeInstance.log, '');
+	// fs.writeFileSync(chromeInstance.errorLog, '');
+	console.log(`Chrome Logs: ${JSON.stringify(chromeInstance)}\nLogs: ${logs}\nError Logs: ${errorLogs}`);
 }
 
 function getUrlFn(url) {
@@ -43,10 +52,23 @@ module.exports.handler = (ev, ctx, cb) => {
 		.then(getUrlFn(url))
 		.then(result => {
 			console.log(result);
-			cb(null, { url, result });
+			logChrome();
+			cb(null, result);
 		})
 		.catch(e => {
 			console.log(e);
-			return reloadChrome().then(() => module.exports.handler(ev, ctx, cb)).catch(ctx.fail);
+			logChrome();
+			cb(e);
 		});
 };
+//
+// module.exports.handler = (ev, ctx, cb) => {
+// 	const boundHandler = fakeHandler.bind(this, ev, ctx, cb);
+// 	boundHandler()
+// 		.then(boundHandler)
+// 		.then(boundHandler)
+// 		.then(boundHandler)
+// 		.then(boundHandler)
+// 		.then(boundHandler)
+// 		.then(ctx.succeed, ctx.fail);
+// };
